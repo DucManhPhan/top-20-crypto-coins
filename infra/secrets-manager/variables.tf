@@ -1,9 +1,5 @@
-variable "cmc_username" {
-  description = "The username for CoinMarketCap API"
-  type        = string
-}
 
-variable "cmc_password" {
-  description = "The password for CoinMarketCap API"
+variable "cmc_api_key" {
+  description = "The API Key of CoinMarketCap API"
   type        = string
 }
