@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps(f'Lỗi: {str(e)}')
+            'body': json.dumps(f'Error: {str(e)}')
         }
 
 def get_api_key_from_cmc():
