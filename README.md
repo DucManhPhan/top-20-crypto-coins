@@ -45,15 +45,19 @@
 
 ### Setup API key
 
-1. Đăng ký tài khoản CoinMarketCap và lấy API key
-2. Tạo file `terraform.tfvars` từ file mẫu `terraform.tfvars.example`:
+1. Register an account on CoinMarketCap and get API Key.
+
+2. Create a file `terraform.tfvars` from file `terraform.tfvars.example`:
+
    ```bash
    cd infra/base-deployment
    cp terraform.tfvars.example terraform.tfvars
    ```
-3. Cập nhật giá trị API key trong file `terraform.tfvars`:
+
+3. Update API key in the file `terraform.tfvars`:
+
    ```
-   cmc_password = "your_actual_api_key_here"
+   cmc_api_key = "your_actual_api_key_here"
    ```
 
 ### Deploy the project
