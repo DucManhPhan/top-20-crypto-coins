@@ -7,11 +7,11 @@
 - [Given problem](#given-problem)
 - [The structure of the project](#the-structure-of-the-project)
 - [How to run the project](#how-to-run-the-project)
+
+   - [Setup API key](#setup-api-key)
+   - [Deploy the project](#deploy-the-project)
+
 - [Schema of crypto-coins table](#schema-of-crypto-coins-table)
-- []()
-- []()
-- []()
-- []()
 - [Wrapping up](#wrapping-up)
 
 
@@ -43,13 +43,7 @@
 
 ## How to run the project
 
-### Cài đặt
-
-1. Clone repository này về máy của bạn
-2. Cài đặt Terraform (phiên bản 1.0.0 trở lên)
-3. Cài đặt AWS CLI và cấu hình credentials
-
-### Cấu hình API key
+### Setup API key
 
 1. Đăng ký tài khoản CoinMarketCap và lấy API key
 2. Tạo file `terraform.tfvars` từ file mẫu `terraform.tfvars.example`:
@@ -62,31 +56,36 @@
    cmc_password = "your_actual_api_key_here"
    ```
 
-### Triển khai
+### Deploy the project
 
-1. Di chuyển vào thư mục `infra/base-deployment`:
+1. Move to the folder `infra/base-deployment`.
+
    ```bash
    cd infra/base-deployment
    ```
 
-2. Khởi tạo Terraform:
+2. Initialize Terraform on this project.
+
    ```bash
    terraform init
    ```
 
-3. Kiểm tra các tài nguyên sẽ được tạo:
+3. Check the resources.
+
    ```bash
    terraform plan
    ```
 
-4. Triển khai các tài nguyên:
+4. Deploy resources on AWS.
+
    ```bash
-   terraform apply
+   terraform apply -auto-approve
    ```
 
-5. Để xóa các tài nguyên khi không cần nữa:
+5. Delete all resources on AWS.
+
    ```bash
-   terraform destroy
+   terraform destroy -auto-approve
    ```
 
 <br>
