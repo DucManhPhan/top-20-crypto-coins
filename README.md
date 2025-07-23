@@ -60,7 +60,14 @@
 
    - DynamoDB.
    - Lambda.
+
+      In Lambda, we will configure AWS CloudWatch Event that will be sent to Lamda after every 4 hours.
+
    - Secrets Manager.
+
+      |   Secret    |           Description          |
+      | ----------- | ------------------------------ |
+      | cmc_api_key | The API Key from CoinMarketCap |
 
 
 <br>
