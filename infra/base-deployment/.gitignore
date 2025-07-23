@@ -1,0 +1,25 @@
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Ignore crash logs
+crash.log
+
+# Ignore Terraform variable override files
+# *.tfvars
+
+# Ignore .terraform directory (Terraform plugins, modules, etc.)
+.terraform/
+.terraform.lock.hcl
+
+# Ignore Terraform plan output
+*.tfplan
+
+# Ignore backup files
+*.backup
+
+# Ignore lock file (optional, keep if you want reproducible
+
+.envrc
+*.pyc
+*.zip
