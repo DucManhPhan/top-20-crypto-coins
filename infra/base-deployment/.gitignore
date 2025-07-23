@@ -6,7 +6,7 @@
 crash.log
 
 # Ignore Terraform variable override files
-# *.tfvars
+*.tfvars
 
 # Ignore .terraform directory (Terraform plugins, modules, etc.)
 .terraform/
