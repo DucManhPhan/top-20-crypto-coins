@@ -40,11 +40,11 @@
 |--- backend
 |
 |--- infra
-|      |
-|      |--- base-deployment
-|      |--- dynamodb
-|      |--- lambda
-|      |--- secrets-manager
+       |
+       |--- base-deployment
+       |--- dynamodb
+       |--- lambda
+       |--- secrets-manager
 ```
 
 1. `backend` directory.
@@ -131,7 +131,7 @@ Below is the schema of the table `crypto_coins`:
 
 ```json
 {
-  "id": "string", // Primary key - ID của a coin CoinMarketCap
+  "id": "string", // Primary key - ID of a coin on CoinMarketCap
   "timestamp": "number", // Sort key - The time that get data from CoinMarketCap (Unix timestamp)
   "name": "string", // The name of a coin like Bitcoin, Ethereum, ...
   "symbol": "string", // The symbol of a coin like BTC, ETH, ...
