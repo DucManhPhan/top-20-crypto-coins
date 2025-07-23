@@ -36,7 +36,31 @@
 
 ## The structure of the project
 
+```
+|--- backend
+|
+|--- infra
+|      |
+|      |--- base-deployment
+|      |--- dynamodb
+|      |--- lambda
+|      |--- secrets-manager
+```
 
+1. `backend` directory.
+
+   Write code to satisfy the core flow:
+   - Get API Key of CoinMarketCap from AWS Secrets Manager.
+   - Pull the top 20 crypto coins from CoinMarketCap.
+   - Save them to AWS DynamoDB.
+
+2. `infra` directory.
+
+   This directory contains the Terraform code for AWS services.
+
+   - DynamoDB.
+   - Lambda.
+   - Secrets Manager.
 
 
 <br>
