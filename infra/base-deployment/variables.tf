@@ -1,14 +1,4 @@
 
-variable "cmc_username" {
-  description = "CoinMarketCap username"
-  type        = string
-}
-
-variable "cmc_password" {
-  description = "CoinMarketCap password"
-  type        = string
-}
-
 variable "cmc_api_key_name" {
   description = "Name of the CoinMarketCap's API Key in AWS Secrets Manager"
   type        = string
