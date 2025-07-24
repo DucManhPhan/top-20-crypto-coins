@@ -2,8 +2,10 @@ import json
 import os
 import time
 import boto3
-import requests
+import urllib.request
+import urllib.parse
 from datetime import datetime
+from decimal import Decimal
 
 CMC_API_KEY_NAME = os.environ.get('CMC_API_KEY_NAME')
 DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE')
@@ -37,7 +39,7 @@ def lambda_handler(event, context):
             'body': json.dumps(f'Error: {str(e)}')
         }
 
-def get_api_key_from_cmc():
+def get_api_key_of_cmc():
     """
     Get API Key from CoinMarketCap
     """
@@ -53,30 +55,34 @@ def get_api_key_from_cmc():
 
 def get_top_crypto_coins():
     """
-    Get information of 20 crypto coins from CoinMarketCap API
+    Get information of 20 crypto coins from CoinMarketCap API using urllib
     """
-    apiKey = get_api_key_from_cmc()
+    apiKey = get_api_key_of_cmc()
 
-    headers = {
-        'X-CMC_PRO_API_KEY': apiKey,
-        'Accept': 'application/json'
-    }
-
+    # Build URL with parameters
     params = {
         'start': '1',
         'limit': '20',
         'convert': 'USD'
     }
+    url = CMC_API_URL + '?' + urllib.parse.urlencode(params)
     
     try:
-        response = requests.get(CMC_API_URL, headers=headers, params=params)
-        data = response.json()
+        # Create request with headers
+        req = urllib.request.Request(url)
+        req.add_header('X-CMC_PRO_API_KEY', apiKey)
+        req.add_header('Accept', 'application/json')
         
-        if response.status_code != 200:
-            print(f"Error API: {data.get('status', {}).get('error_message', 'Unknown error')}")
-            return []
+        # Make the request
+        with urllib.request.urlopen(req) as response:
+            response_data = response.read().decode('utf-8')
+            data = json.loads(response_data)
+            
+            if response.status != 200:
+                print(f"Error API: {data.get('status', {}).get('error_message', 'Unknown error')}")
+                return []
 
-        return data.get('data', [])
+            return data.get('data', [])
     except Exception as e:
         print(f"Error when calling API CoinMarketCap: {e}")
         return []
@@ -102,10 +108,10 @@ def save_to_dynamodb(coins):
                 'timestamp': current_timestamp,
                 'name': coin.get('name', ''),
                 'symbol': coin.get('symbol', ''),
-                'price_usd': float(quote.get('price', 0)),
-                'market_cap': float(quote.get('market_cap', 0)),
-                'volume_24h': float(quote.get('volume_24h', 0)),
-                'percent_change_24h': float(quote.get('percent_change_24h', 0)),
+                'price_usd': Decimal(str(quote.get('price', 0))),
+                'market_cap': Decimal(str(quote.get('market_cap', 0))),
+                'volume_24h': Decimal(str(quote.get('volume_24h', 0))),
+                'percent_change_24h': Decimal(str(quote.get('percent_change_24h', 0))),
                 'rank': int(coin.get('cmc_rank', 0))
             }
 
