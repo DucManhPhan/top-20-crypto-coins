@@ -96,9 +96,9 @@ def save_to_dynamodb(coins):
     try:
         for coin in coins:
             quote = coin.get('quote', {}).get('USD', {})
-            
+
             item = {
-                'coin_id': str(coin.get('id', '')),
+                'id': str(coin.get('id', '')),
                 'timestamp': current_timestamp,
                 'name': coin.get('name', ''),
                 'symbol': coin.get('symbol', ''),
@@ -108,7 +108,7 @@ def save_to_dynamodb(coins):
                 'percent_change_24h': float(quote.get('percent_change_24h', 0)),
                 'rank': int(coin.get('cmc_rank', 0))
             }
-            
+
             table.put_item(Item=item)
             print(f"Saved data of {coin.get('name', '')}")
     except Exception as e:

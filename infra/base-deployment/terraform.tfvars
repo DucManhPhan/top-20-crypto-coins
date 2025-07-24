@@ -1,6 +1,6 @@
 
 # CoinMarketCap API Key configuration
-cmc_api_key_name = "cmc_api_key"
+cmc_api_key_name = "cmc_api_key_v2"
 cmc_api_key = "<value_of_your_cmc_api_key>"
 
 # DynamoDB's configuration

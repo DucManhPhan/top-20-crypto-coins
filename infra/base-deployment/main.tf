@@ -3,6 +3,7 @@ module "secrets_manager" {
   source = "../secrets-manager"
 
   cmc_api_key = var.cmc_api_key
+  cmc_api_key_name = var.cmc_api_key_name
 }
 
 module "dynamodb" {
