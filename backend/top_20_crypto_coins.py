@@ -125,7 +125,7 @@ def save_to_dynamodb(coins):
             quote = coin.get('quote', {}).get('USD', {})
             
             item = {
-                'coin_id': str(coin.get('id', '')),
+                'id': str(coin.get('id', '')),
                 'timestamp': current_timestamp,
                 'name': coin.get('name', ''),
                 'symbol': coin.get('symbol', ''),
