@@ -102,8 +102,7 @@ def main():
     output_zip = 'lambda-layer.zip'
 
     if not os.path.exists(python_dir):
-        print(f"[MAIN] Directory {python_dir} does not exist. Please check the path.")
-        return
+        os.makedirs(python_dir)
 
     install_requirements(requirements_file, python_dir)    
     clean_unnecessary_files(python_dir)
