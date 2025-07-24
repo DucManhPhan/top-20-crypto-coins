@@ -61,7 +61,9 @@
    - DynamoDB.
    - Lambda.
 
-      In Lambda, we will configure AWS CloudWatch Event that will be sent to Lamda after every 4 hours.
+      In Lambda, we will configure AWS CloudWatch Event that will be sent to Lamda every 4 hours.
+
+      ![](./img/img-2.png)
 
    - Secrets Manager.
 
@@ -142,6 +144,10 @@ Below is the schema of the table `crypto_coins`:
   "rank": "number" // The rank of a coin in CoinMarketCap
 }
 ```
+
+When testing Lambda function, the data was saved into DynamoDB.
+
+![](./img/img-1.png)
 
 
 <br>
