@@ -107,19 +107,28 @@
    terraform init
    ```
 
-3. Check the resources.
+3. Create lambda-layer.zip file.
+
+   ```bash
+   cd ..
+   cd lambda
+
+   python .\lambda-layer\create_lambda_layer.py
+   ```
+
+4. Check the resources.
 
    ```bash
    terraform plan
    ```
 
-4. Deploy resources on AWS.
+5. Deploy resources on AWS.
 
    ```bash
    terraform apply -auto-approve
    ```
 
-5. Delete all resources on AWS.
+6. Delete all resources on AWS.
 
    ```bash
    terraform destroy -auto-approve

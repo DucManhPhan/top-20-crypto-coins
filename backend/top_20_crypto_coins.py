@@ -6,6 +6,7 @@ import urllib.request
 import urllib.parse
 from datetime import datetime
 from decimal import Decimal
+import requests
 
 CMC_API_KEY_NAME = os.environ.get('CMC_API_KEY_NAME')
 DYNAMODB_TABLE = os.environ.get('DYNAMODB_TABLE')
