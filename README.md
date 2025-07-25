@@ -107,14 +107,18 @@
    terraform init
    ```
 
-3. Create lambda-layer.zip file.
+3. Create `lambda-layer.zip` file.
 
-   ```bash
-   cd ..
-   cd lambda
+   - 1st way: Use `create_lambda_layer.py` script file to create `lambda-layer.zip` file.
 
-   python .\lambda-layer\create_lambda_layer.py
-   ```
+      ```bash
+      cd ..
+      cd lambda
+
+      python .\lambda-layer\create_lambda_layer.py
+      ```
+
+   - 2nd way: Run `pip install -r requirements.txt -t python/` command or run script file `install_requirements.py` to pull dependencies that are defined in `requirements.txt` file. Then `archive_file lambda_layer_zip` will zip `python/` directory to `lambda-layer.zip` file.
 
 4. Check the resources.
 
