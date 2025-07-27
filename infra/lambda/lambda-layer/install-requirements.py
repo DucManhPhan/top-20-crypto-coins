@@ -19,8 +19,8 @@ def install_requirements(requirements_file, target_dir):
     ])
     print(f"[INSTALL_REQUIREMENTS] Successfully installed packages to {target_dir}")
 
-if __main__ == "__main__":
-    requirements_file = 'requirements.txt'
-    target_dir = 'lambda_layer/python'
+if __name__ == "__main__":
+    requirements_file = 'lambda-layer/requirements.txt'
+    target_dir = 'lambda-layer/python'
 
     install_requirements(requirements_file, target_dir)
