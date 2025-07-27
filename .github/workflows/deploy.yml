@@ -1,0 +1,60 @@
+name: Deploy Crypto Coins Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  TF_VERSION: 1.5.0
+  AWS_REGION: ap-southeast-1
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Build Lambda Layer
+      run: |
+        cd infra/lambda/lambda-layer
+        python -m pip install -r requirements.txt -t python/
+        cd python && zip -r ../lambda_layer.zip . && cd ..
+        rm -rf python
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Terraform Init
+      run: |
+        cd infra/base-deployment
+        terraform init
+
+    - name: Terraform Plan
+      run: |
+        cd infra/base-deployment
+        terraform plan -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        cd infra/base-deployment
+        terraform apply -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
