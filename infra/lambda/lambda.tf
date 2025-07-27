@@ -20,6 +20,12 @@ resource "aws_lambda_layer_version" "lambda_layer" {
   description         = "Dependencies for crypto coins Lambda function"
 }
 
+# CloudWatch Log Group for Lambda
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/top_20_crypto_coins"
+  retention_in_days = 7
+}
+
 resource "aws_lambda_function" "top_20_crypto_coins" {
   function_name    = "top_20_crypto_coins"
   filename         = data.archive_file.make_zip.output_path
@@ -37,6 +43,8 @@ resource "aws_lambda_function" "top_20_crypto_coins" {
       DYNAMODB_TABLE   = var.dynamodb_table_name
     }
   }
+  
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
 }
 
 # Allow CloudWatch Events to call Lambda
