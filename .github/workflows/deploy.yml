@@ -55,10 +55,21 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Setup S3 bucket for Terraform state
+      run: |
+        BUCKET_NAME="terraform-state-crypto-coins-bucket-${{ github.repository_owner }}"
+        if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
+          echo "Creating S3 bucket: $BUCKET_NAME"
+          aws s3 mb "s3://$BUCKET_NAME" --region ${{ env.AWS_REGION }}
+          aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --versioning-configuration Status=Enabled
+        else
+          echo "S3 bucket already exists: $BUCKET_NAME"
+        fi
+
     - name: Terraform Init
       run: |
         cd infra/base-deployment
-        terraform init
+        terraform init -migrate-state -force-copy
 
     - name: Terraform Plan
       if: github.event.inputs.action == 'plan' || github.event_name != 'workflow_dispatch'
