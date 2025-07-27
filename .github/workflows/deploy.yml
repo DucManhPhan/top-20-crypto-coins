@@ -57,7 +57,8 @@ jobs:
 
     - name: Setup S3 bucket for Terraform state
       run: |
-        BUCKET_NAME="terraform-state-crypto-coins-bucket-${{ github.repository_owner }}"
+        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
         if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
           echo "Creating S3 bucket: $BUCKET_NAME"
           aws s3 mb "s3://$BUCKET_NAME" --region ${{ env.AWS_REGION }}
