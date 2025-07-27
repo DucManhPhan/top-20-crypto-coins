@@ -39,8 +39,9 @@ jobs:
     - name: Build Lambda Layer
       run: |
         cd infra/lambda/lambda-layer
+        mkdir -p python
         python -m pip install -r requirements.txt -t python/
-        cd python && zip -r ../lambda_layer.zip . && cd ..
+        zip -r lambda-layer.zip python/
         rm -rf python
 
     - name: Setup Terraform
