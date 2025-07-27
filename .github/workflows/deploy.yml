@@ -70,7 +70,9 @@ jobs:
     - name: Terraform Init
       run: |
         cd infra/base-deployment
-        terraform init -migrate-state -force-copy
+        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
+        terraform init -backend-config="bucket=${BUCKET_NAME}" -migrate-state -force-copy
 
     - name: Terraform Plan
       if: github.event.inputs.action == 'plan' || github.event_name != 'workflow_dispatch'
