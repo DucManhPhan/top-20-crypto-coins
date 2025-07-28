@@ -17,10 +17,10 @@ on:
       environment:
         description: 'Environment to deploy'
         required: true
-        default: 'prod'
+        default: 'production'
         type: choice
         options:
-        - prod
+        - production
   workflow_call:
     inputs:
       action:
@@ -31,7 +31,7 @@ on:
       environment:
         description: 'Environment to deploy'
         required: false
-        default: 'prod'
+        default: 'production'
         type: string
 
 env:
@@ -42,7 +42,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
-    environment: prod
+    environment: production
 
     steps:
     - name: Checkout
@@ -78,8 +78,8 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
-        echo "Deploying to environment: prod"
+        echo "DEPLOY_ENV=production" >> $GITHUB_ENV
+        echo "Deploying to environment: production"
 
     - name: Setup S3 bucket for Terraform state
       run: |
