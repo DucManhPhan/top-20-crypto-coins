@@ -33,6 +33,7 @@ jobs:
     uses: ./.github/workflows/terraform.yml
     with:
       action: ${{ github.event.inputs.action || 'apply' }}
+      environment: 'prod'
     secrets: inherit
 
   # Integration tests (only after successful deployment)

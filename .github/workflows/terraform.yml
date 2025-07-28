@@ -17,11 +17,9 @@ on:
       environment:
         description: 'Environment to deploy'
         required: true
-        default: 'dev'
+        default: 'prod'
         type: choice
         options:
-        - dev
-        - staging
         - prod
   workflow_call:
     inputs:
@@ -44,7 +42,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || github.event.inputs.environment || 'prod' }}
+    environment: prod
 
     steps:
     - name: Checkout
@@ -80,9 +78,8 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        ENV="${{ inputs.environment || github.event.inputs.environment || 'prod' }}"
-        echo "DEPLOY_ENV=$ENV" >> $GITHUB_ENV
-        echo "Deploying to environment: $ENV"
+        echo "DEPLOY_ENV=prod" >> $GITHUB_ENV
+        echo "Deploying to environment: prod"
 
     - name: Setup S3 bucket for Terraform state
       run: |
@@ -98,30 +95,30 @@ jobs:
 
     - name: Terraform Init
       run: |
-        cd infra/environments/${{ env.DEPLOY_ENV }}
+        cd infra/environments/prod
         OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
         BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
         terraform init -backend-config="bucket=${BUCKET_NAME}"
 
     - name: Terraform Validate
       run: |
-        cd infra/environments/${{ env.DEPLOY_ENV }}
+        cd infra/environments/prod
         terraform validate
 
     - name: Terraform Plan
       if: inputs.action == 'plan' || github.event.inputs.action == 'plan' || (github.event_name != 'workflow_dispatch' && github.event_name != 'workflow_call')
       run: |
-        cd infra/environments/${{ env.DEPLOY_ENV }}
+        cd infra/environments/prod
         terraform plan -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
 
     - name: Terraform Apply
       if: inputs.action == 'apply' || github.event.inputs.action == 'apply' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       run: |
-        cd infra/environments/${{ env.DEPLOY_ENV }}
+        cd infra/environments/prod
         terraform apply -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
 
     - name: Terraform Destroy
       if: inputs.action == 'destroy' || github.event.inputs.action == 'destroy'
       run: |
-        cd infra/environments/${{ env.DEPLOY_ENV }}
+        cd infra/environments/prod
         terraform destroy -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"

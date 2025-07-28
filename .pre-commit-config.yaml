@@ -1,1 +1,6 @@
-repos:\n  - repo: https://github.com/pre-commit/pre-commit-hooks\n    rev: v4.4.0\n    hooks:\n      - id: trailing-whitespace\n      - id: end-of-file-fixer\n      - id: check-yaml\n      - id: check-json\n      - id: check-merge-conflict\n\n  - repo: https://github.com/psf/black\n    rev: 23.9.1\n    hooks:\n      - id: black\n        language_version: python3\n        files: ^(backend|tests)/.*\\.py$\n\n  - repo: https://github.com/antonbabenko/pre-commit-terraform\n    rev: v1.83.5\n    hooks:\n      - id: terraform_fmt\n      - id: terraform_validate\n        args:\n          - --args=-json\n      - id: terraform_tflint\n        args:\n          - --args=--only=terraform_deprecated_interpolation\n          - --args=--only=terraform_unused_declarations\n          - --args=--only=terraform_comment_syntax\n          - --args=--only=terraform_documented_outputs\n          - --args=--only=terraform_documented_variables
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
