@@ -11,7 +11,7 @@ on:
       environment:
         description: 'Environment to test'
         required: false
-        default: 'prod'
+        default: 'production'
         type: string
 
 env:
@@ -21,6 +21,7 @@ jobs:
   integration-test:
     name: Integration Test
     runs-on: ubuntu-latest
+    environment: production
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_call' }}
     
     steps:
@@ -36,7 +37,7 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        ENV="${{ inputs.environment || 'prod' }}"
+        ENV="${{ inputs.environment || 'production' }}"
         echo "TEST_ENV=$ENV" >> $GITHUB_ENV
         echo "Testing environment: $ENV"
 
@@ -60,7 +61,7 @@ jobs:
 
     - name: Verify DynamoDB Data
       run: |
-        TABLE_NAME="${{ env.TEST_ENV }}-crypto-coins"
+        TABLE_NAME="prod-crypto-coins"
         echo "Checking DynamoDB table: $TABLE_NAME"
         ITEM_COUNT=$(aws dynamodb scan --table-name "$TABLE_NAME" --select COUNT --output text --query 'Count')
         echo "Items in DynamoDB: $ITEM_COUNT"
@@ -73,7 +74,7 @@ jobs:
 
     - name: Test Secrets Manager
       run: |
-        SECRET_NAME="${{ env.TEST_ENV }}-cmc-api-key"
+        SECRET_NAME="prod-cmc-api-key"
         echo "Testing Secrets Manager access: $SECRET_NAME"
         SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --query 'SecretString' --output text)
         
