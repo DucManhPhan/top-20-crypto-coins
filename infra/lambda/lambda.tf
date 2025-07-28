@@ -24,6 +24,13 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 resource "aws_cloudwatch_log_group" "lambda_logs" {
   name              = "/aws/lambda/top_20_crypto_coins"
   retention_in_days = 7
+  
+  tags = {
+    Name        = "crypto-coins-lambda-logs"
+    Environment = "production"
+    Project     = "crypto-coins-tracker"
+    Purpose     = "lambda-logging"
+  }
 }
 
 resource "aws_lambda_function" "top_20_crypto_coins" {
@@ -36,6 +43,7 @@ resource "aws_lambda_function" "top_20_crypto_coins" {
   role             = aws_iam_role.lambda_iam_role.arn
   timeout          = 30
   memory_size      = 128
+  publish          = true
   
   environment {
     variables = {
@@ -44,7 +52,23 @@ resource "aws_lambda_function" "top_20_crypto_coins" {
     }
   }
   
+  tags = {
+    Name        = "top-20-crypto-coins-lambda"
+    Environment = "production"
+    Project     = "crypto-coins-tracker"
+    Owner       = "data-team"
+    Purpose     = "crypto-data-collection"
+  }
+  
   depends_on = [aws_cloudwatch_log_group.lambda_logs]
+}
+
+# Lambda alias for stable deployment
+resource "aws_lambda_alias" "live" {
+  name             = "live"
+  description      = "Live alias for crypto coins Lambda"
+  function_name    = aws_lambda_function.top_20_crypto_coins.function_name
+  function_version = aws_lambda_function.top_20_crypto_coins.version
 }
 
 # Allow CloudWatch Events to call Lambda
@@ -54,6 +78,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   function_name = aws_lambda_function.top_20_crypto_coins.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.every_four_hours.arn
+  qualifier     = aws_lambda_alias.live.name
 }
 
 # CloudWatch Event Rule to run Lambda every 4 hours
@@ -61,10 +86,17 @@ resource "aws_cloudwatch_event_rule" "every_four_hours" {
   name                = "every-four-hours"
   description         = "Fires every 4 hours"
   schedule_expression = "rate(4 hours)"
+  
+  tags = {
+    Name        = "crypto-coins-scheduler"
+    Environment = "production"
+    Project     = "crypto-coins-tracker"
+    Purpose     = "lambda-scheduling"
+  }
 }
 
 resource "aws_cloudwatch_event_target" "run_lambda_every_four_hours" {
   rule      = aws_cloudwatch_event_rule.every_four_hours.name
   target_id = "top_20_crypto_coins"
-  arn       = aws_lambda_function.top_20_crypto_coins.arn
+  arn       = aws_lambda_alias.live.arn
 }

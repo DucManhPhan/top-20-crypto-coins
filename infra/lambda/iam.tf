@@ -13,6 +13,13 @@ resource "aws_iam_role" "lambda_iam_role" {
         }
         ]
     })
+    
+    tags = {
+        Name        = "crypto-coins-lambda-role"
+        Environment = "production"
+        Project     = "crypto-coins-tracker"
+        Purpose     = "lambda-execution-role"
+    }
 }
 
 resource "aws_iam_policy_attachment" "dynamodb_policy" {
