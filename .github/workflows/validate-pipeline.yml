@@ -1,0 +1,88 @@
+name: Validate CI/CD Pipeline
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Pipeline Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Validate Workflow Syntax
+      run: |
+        echo "🔍 Validating workflow files..."
+        
+        # Check if all workflow files exist
+        WORKFLOWS=(
+          ".github/workflows/deploy.yml"
+          ".github/workflows/test.yml"
+          ".github/workflows/code-quality.yml"
+          ".github/workflows/terraform.yml"
+          ".github/workflows/integration-test.yml"
+        )
+        
+        for workflow in "${WORKFLOWS[@]}"; do
+          if [ -f "$workflow" ]; then
+            echo "✅ $workflow exists"
+          else
+            echo "❌ $workflow missing"
+            exit 1
+          fi
+        done
+
+    - name: Check Workflow Dependencies
+      run: |
+        echo "🔗 Checking workflow dependencies..."
+        
+        # Check if reusable workflows have workflow_call trigger
+        if grep -q "workflow_call:" .github/workflows/test.yml; then
+          echo "✅ test.yml has workflow_call trigger"
+        else
+          echo "❌ test.yml missing workflow_call trigger"
+          exit 1
+        fi
+        
+        if grep -q "workflow_call:" .github/workflows/code-quality.yml; then
+          echo "✅ code-quality.yml has workflow_call trigger"
+        else
+          echo "❌ code-quality.yml missing workflow_call trigger"
+          exit 1
+        fi
+        
+        if grep -q "workflow_call:" .github/workflows/terraform.yml; then
+          echo "✅ terraform.yml has workflow_call trigger"
+        else
+          echo "❌ terraform.yml missing workflow_call trigger"
+          exit 1
+        fi
+
+    - name: Validate Pipeline Logic
+      run: |
+        echo "🧠 Validating pipeline logic..."
+        
+        # Check deploy.yml structure
+        if grep -q "uses: ./.github/workflows/test.yml" .github/workflows/deploy.yml; then
+          echo "✅ deploy.yml calls test.yml"
+        else
+          echo "❌ deploy.yml doesn't call test.yml"
+          exit 1
+        fi
+        
+        if grep -q "needs: \[test, code-quality\]" .github/workflows/deploy.yml; then
+          echo "✅ terraform job depends on test and code-quality"
+        else
+          echo "❌ terraform job missing proper dependencies"
+          exit 1
+        fi
+        
+        echo "✅ Pipeline validation completed successfully"

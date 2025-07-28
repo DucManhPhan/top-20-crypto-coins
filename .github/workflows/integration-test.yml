@@ -1,0 +1,71 @@
+name: Integration Tests
+
+on:
+  workflow_run:
+    workflows: ["Terraform Infrastructure"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_call:
+
+env:
+  AWS_REGION: ap-southeast-1
+
+jobs:
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_call' }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Test Lambda Function
+      run: |
+        echo "Testing Lambda function invocation..."
+        aws lambda invoke \
+          --function-name top_20_crypto_coins:live \
+          --payload '{}' \
+          response.json
+        
+        cat response.json
+        
+        # Check if response contains success status
+        if grep -q '"statusCode": 200' response.json; then
+          echo "✅ Lambda function executed successfully"
+        else
+          echo "❌ Lambda function failed"
+          exit 1
+        fi
+
+    - name: Verify DynamoDB Data
+      run: |
+        echo "Checking DynamoDB table for data..."
+        ITEM_COUNT=$(aws dynamodb scan --table-name crypto_coins --select COUNT --output text --query 'Count')
+        echo "Items in DynamoDB: $ITEM_COUNT"
+        
+        if [ "$ITEM_COUNT" -gt 0 ]; then
+          echo "✅ Data found in DynamoDB table"
+        else
+          echo "⚠️ No data found in DynamoDB table"
+        fi
+
+    - name: Test Secrets Manager
+      run: |
+        echo "Testing Secrets Manager access..."
+        SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id cmc_api_key --query 'SecretString' --output text)
+        
+        if [ -n "$SECRET_VALUE" ] && [ "$SECRET_VALUE" != "null" ]; then
+          echo "✅ Secret retrieved successfully"
+        else
+          echo "❌ Failed to retrieve secret"
+          exit 1
+        fi

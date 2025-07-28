@@ -1,4 +1,4 @@
-name: Deploy Crypto Coins Infrastructure
+name: Main CI/CD Pipeline
 
 on:
   push:
@@ -17,76 +17,83 @@ on:
         - apply
         - destroy
 
-env:
-  TF_VERSION: 1.5.0
-  AWS_REGION: ap-southeast-1
-
 jobs:
+  # Call test workflow
+  test:
+    uses: ./.github/workflows/test.yml
+
+  # Call code quality workflow  
+  code-quality:
+    uses: ./.github/workflows/code-quality.yml
+
+  # Deploy infrastructure (only on main branch or manual dispatch)
   terraform:
-    name: Terraform
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    needs: [test, code-quality]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      action: ${{ github.event.inputs.action || 'apply' }}
+    secrets: inherit
+
+  # Integration tests (only after successful deployment)
+  integration-test:
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    needs: terraform
+    uses: ./.github/workflows/integration-test.yml
+    secrets: inherit
+
+  # Summary job
+  summary:
+    name: Pipeline Summary
     runs-on: ubuntu-latest
-    environment: production
-
+    needs: [test, code-quality, terraform, integration-test]
+    if: always()
+    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Build Lambda Layer
+    - name: Pipeline Status
       run: |
-        cd infra/lambda/lambda-layer
-        mkdir -p python
-        python -m pip install -r requirements.txt -t python/
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Setup S3 bucket for Terraform state
-      run: |
-        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
-        if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
-          echo "Creating S3 bucket: $BUCKET_NAME"
-          aws s3 mb "s3://$BUCKET_NAME" --region ${{ env.AWS_REGION }}
-          aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --versioning-configuration Status=Enabled
+        echo "🚀 CI/CD Pipeline Results:"
+        echo "- Tests: ${{ needs.test.result }}"
+        echo "- Code Quality: ${{ needs.code-quality.result }}"
+        
+        # Show terraform and integration test results if they ran
+        TERRAFORM_RESULT="${{ needs.terraform.result }}"
+        INTEGRATION_RESULT="${{ needs.integration-test.result }}"
+        
+        if [ "$TERRAFORM_RESULT" != "" ]; then
+          echo "- Terraform: $TERRAFORM_RESULT"
         else
-          echo "S3 bucket already exists: $BUCKET_NAME"
+          echo "- Terraform: skipped"
         fi
-
-    - name: Terraform Init
-      run: |
-        cd infra/base-deployment
-        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
-        terraform init -backend-config="bucket=${BUCKET_NAME}" -migrate-state -force-copy
-
-    - name: Terraform Plan
-      if: github.event.inputs.action == 'plan' || github.event_name != 'workflow_dispatch'
-      run: |
-        cd infra/base-deployment
-        terraform plan -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
-
-    - name: Terraform Apply
-      if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event.inputs.action == 'apply'
-      run: |
-        cd infra/base-deployment
-        terraform apply -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
-
-    - name: Terraform Destroy
-      if: github.event.inputs.action == 'destroy'
-      run: |
-        cd infra/base-deployment
-        terraform destroy -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
+        
+        if [ "$INTEGRATION_RESULT" != "" ]; then
+          echo "- Integration Tests: $INTEGRATION_RESULT"
+        else
+          echo "- Integration Tests: skipped"
+        fi
+        
+        # Fail if any job that ran failed
+        FAILED=false
+        if [ "${{ needs.test.result }}" == "failure" ]; then
+          echo "❌ Tests failed"
+          FAILED=true
+        fi
+        if [ "${{ needs.code-quality.result }}" == "failure" ]; then
+          echo "❌ Code quality checks failed"
+          FAILED=true
+        fi
+        if [ "$TERRAFORM_RESULT" == "failure" ]; then
+          echo "❌ Terraform failed"
+          FAILED=true
+        fi
+        if [ "$INTEGRATION_RESULT" == "failure" ]; then
+          echo "❌ Integration tests failed"
+          FAILED=true
+        fi
+        
+        if [ "$FAILED" == "true" ]; then
+          echo "❌ Pipeline failed"
+          exit 1
+        else
+          echo "✅ Pipeline completed successfully"
+        fi

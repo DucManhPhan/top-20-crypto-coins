@@ -1,0 +1,107 @@
+name: Terraform Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+  workflow_call:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: false
+        default: 'apply'
+        type: string
+
+env:
+  TF_VERSION: 1.5.0
+  AWS_REGION: ap-southeast-1
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Build Lambda Layer
+      run: |
+        cd infra/lambda/lambda-layer
+        mkdir -p python
+        python -m pip install -r requirements.txt -t python/
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Format Check
+      run: |
+        cd infra/base-deployment
+        terraform fmt -check -recursive
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup S3 bucket for Terraform state
+      run: |
+        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
+        if ! aws s3 ls "s3://$BUCKET_NAME" 2>/dev/null; then
+          echo "Creating S3 bucket: $BUCKET_NAME"
+          aws s3 mb "s3://$BUCKET_NAME" --region ${{ env.AWS_REGION }}
+          aws s3api put-bucket-versioning --bucket "$BUCKET_NAME" --versioning-configuration Status=Enabled
+        else
+          echo "S3 bucket already exists: $BUCKET_NAME"
+        fi
+
+    - name: Terraform Init
+      run: |
+        cd infra/base-deployment
+        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+        BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
+        terraform init -backend-config="bucket=${BUCKET_NAME}" -migrate-state -force-copy
+
+    - name: Terraform Validate
+      run: |
+        cd infra/base-deployment
+        terraform validate
+
+    - name: Terraform Plan
+      if: inputs.action == 'plan' || github.event.inputs.action == 'plan' || (github.event_name != 'workflow_dispatch' && github.event_name != 'workflow_call')
+      run: |
+        cd infra/base-deployment
+        terraform plan -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
+
+    - name: Terraform Apply
+      if: inputs.action == 'apply' || github.event.inputs.action == 'apply' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
+      run: |
+        cd infra/base-deployment
+        terraform apply -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
+
+    - name: Terraform Destroy
+      if: inputs.action == 'destroy' || github.event.inputs.action == 'destroy'
+      run: |
+        cd infra/base-deployment
+        terraform destroy -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
