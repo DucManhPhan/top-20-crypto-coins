@@ -1,0 +1,112 @@
+name: Multi-Environment CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+
+jobs:
+  # Always run tests and code quality
+  test:
+    uses: ./.github/workflows/test.yml
+
+  code-quality:
+    uses: ./.github/workflows/code-quality.yml
+
+  # Deploy to dev automatically on develop branch
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: [test, code-quality]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: 'dev'
+      action: 'apply'
+    secrets: inherit
+
+  # Deploy to staging on main branch
+  deploy-staging:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test, code-quality]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: 'staging'
+      action: 'apply'
+    secrets: inherit
+
+  # Manual deployment to any environment
+  deploy-manual:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [test, code-quality]
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: ${{ github.event.inputs.environment }}
+      action: ${{ github.event.inputs.action }}
+    secrets: inherit
+
+  # Integration tests for staging and prod deployments
+  integration-test-staging:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-staging
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      environment: 'staging'
+    secrets: inherit
+
+  integration-test-manual:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'
+    needs: deploy-manual
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      environment: ${{ github.event.inputs.environment }}
+    secrets: inherit
+
+  # Production deployment approval
+  deploy-prod-approval:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [deploy-staging, integration-test-staging]
+    runs-on: ubuntu-latest
+    environment: prod-approval
+    steps:
+    - name: Manual Approval Required
+      run: |
+        echo "🚀 Staging deployment successful!"
+        echo "✅ Integration tests passed"
+        echo "⏳ Waiting for manual approval to deploy to production..."
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-prod-approval
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: 'prod'
+      action: 'apply'
+    secrets: inherit
+
+  integration-test-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-prod
+    uses: ./.github/workflows/integration-test.yml
+    with:
+      environment: 'prod'
+    secrets: inherit

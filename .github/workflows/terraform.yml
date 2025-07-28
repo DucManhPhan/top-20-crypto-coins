@@ -14,12 +14,26 @@ on:
         - plan
         - apply
         - destroy
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
   workflow_call:
     inputs:
       action:
         description: 'Action to perform'
         required: false
         default: 'apply'
+        type: string
+      environment:
+        description: 'Environment to deploy'
+        required: false
+        default: 'prod'
         type: string
 
 env:
@@ -30,7 +44,7 @@ jobs:
   terraform:
     name: Terraform
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.environment || github.event.inputs.environment || 'prod' }}
 
     steps:
     - name: Checkout
@@ -64,6 +78,12 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Set Environment Variables
+      run: |
+        ENV="${{ inputs.environment || github.event.inputs.environment || 'prod' }}"
+        echo "DEPLOY_ENV=$ENV" >> $GITHUB_ENV
+        echo "Deploying to environment: $ENV"
+
     - name: Setup S3 bucket for Terraform state
       run: |
         OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
@@ -78,30 +98,30 @@ jobs:
 
     - name: Terraform Init
       run: |
-        cd infra/base-deployment
+        cd infra/environments/${{ env.DEPLOY_ENV }}
         OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
         BUCKET_NAME="terraform-state-crypto-coins-bucket-${OWNER}"
-        terraform init -backend-config="bucket=${BUCKET_NAME}" -migrate-state -force-copy
+        terraform init -backend-config="bucket=${BUCKET_NAME}"
 
     - name: Terraform Validate
       run: |
-        cd infra/base-deployment
+        cd infra/environments/${{ env.DEPLOY_ENV }}
         terraform validate
 
     - name: Terraform Plan
       if: inputs.action == 'plan' || github.event.inputs.action == 'plan' || (github.event_name != 'workflow_dispatch' && github.event_name != 'workflow_call')
       run: |
-        cd infra/base-deployment
+        cd infra/environments/${{ env.DEPLOY_ENV }}
         terraform plan -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
 
     - name: Terraform Apply
       if: inputs.action == 'apply' || github.event.inputs.action == 'apply' || (github.ref == 'refs/heads/main' && github.event_name == 'push')
       run: |
-        cd infra/base-deployment
+        cd infra/environments/${{ env.DEPLOY_ENV }}
         terraform apply -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"
 
     - name: Terraform Destroy
       if: inputs.action == 'destroy' || github.event.inputs.action == 'destroy'
       run: |
-        cd infra/base-deployment
+        cd infra/environments/${{ env.DEPLOY_ENV }}
         terraform destroy -auto-approve -var="cmc_api_key=${{ secrets.CMC_API_KEY }}"

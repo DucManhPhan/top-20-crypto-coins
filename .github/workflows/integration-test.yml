@@ -7,6 +7,12 @@ on:
       - completed
     branches: [ main ]
   workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: false
+        default: 'prod'
+        type: string
 
 env:
   AWS_REGION: ap-southeast-1
@@ -28,6 +34,12 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Set Environment Variables
+      run: |
+        ENV="${{ inputs.environment || 'prod' }}"
+        echo "TEST_ENV=$ENV" >> $GITHUB_ENV
+        echo "Testing environment: $ENV"
+
     - name: Test Lambda Function
       run: |
         echo "Testing Lambda function invocation..."
@@ -48,8 +60,9 @@ jobs:
 
     - name: Verify DynamoDB Data
       run: |
-        echo "Checking DynamoDB table for data..."
-        ITEM_COUNT=$(aws dynamodb scan --table-name crypto_coins --select COUNT --output text --query 'Count')
+        TABLE_NAME="${{ env.TEST_ENV }}-crypto-coins"
+        echo "Checking DynamoDB table: $TABLE_NAME"
+        ITEM_COUNT=$(aws dynamodb scan --table-name "$TABLE_NAME" --select COUNT --output text --query 'Count')
         echo "Items in DynamoDB: $ITEM_COUNT"
         
         if [ "$ITEM_COUNT" -gt 0 ]; then
@@ -60,8 +73,9 @@ jobs:
 
     - name: Test Secrets Manager
       run: |
-        echo "Testing Secrets Manager access..."
-        SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id cmc_api_key --query 'SecretString' --output text)
+        SECRET_NAME="${{ env.TEST_ENV }}-cmc-api-key"
+        echo "Testing Secrets Manager access: $SECRET_NAME"
+        SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --query 'SecretString' --output text)
         
         if [ -n "$SECRET_VALUE" ] && [ "$SECRET_VALUE" != "null" ]; then
           echo "✅ Secret retrieved successfully"
