@@ -3,7 +3,7 @@ import os
 import sys
 import pytest
 import boto3
-from moto import mock_dynamodb, mock_secretsmanager
+from moto import mock_aws
 from unittest.mock import patch, MagicMock
 
 # Add backend to path
@@ -18,58 +18,60 @@ def mock_env():
     os.environ["DYNAMODB_TABLE"] = "test-crypto-coins"
 
 
-@mock_secretsmanager
+@mock_aws
 def test_get_api_key_from_cmc(mock_env):
     """Test getting API key from Secrets Manager"""
-    client = boto3.client("secretsmanager", region_name="us-east-1")
-    client.create_secret(Name="test-api-key", SecretString="test-key-123")
+    with patch.object(top_20_crypto_coins, 'CMC_API_KEY_NAME', 'test-api-key'):
+        client = boto3.client("secretsmanager", region_name="ap-southeast-1")
+        client.create_secret(Name="test-api-key", SecretString="test-key-123")
 
-    result = top_20_crypto_coins.get_api_key_from_cmc()
-    assert result == "test-key-123"
+        result = top_20_crypto_coins.get_api_key_from_cmc()
+        assert result == "test-key-123"
 
 
-@mock_dynamodb
+@mock_aws
 def test_save_to_dynamodb(mock_env):
     """Test saving coins to DynamoDB"""
-    # Create mock DynamoDB table
-    dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-    table = dynamodb.create_table(
-        TableName="test-crypto-coins",
-        KeySchema=[
-            {"AttributeName": "id", "KeyType": "HASH"},
-            {"AttributeName": "timestamp", "KeyType": "RANGE"},
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "id", "AttributeType": "S"},
-            {"AttributeName": "timestamp", "AttributeType": "N"},
-        ],
-        BillingMode="PAY_PER_REQUEST",
-    )
+    with patch.object(top_20_crypto_coins, 'DYNAMODB_TABLE', 'test-crypto-coins'):
+        # Create mock DynamoDB table
+        dynamodb = boto3.resource("dynamodb", region_name="ap-southeast-1")
+        table = dynamodb.create_table(
+            TableName="test-crypto-coins",
+            KeySchema=[
+                {"AttributeName": "id", "KeyType": "HASH"},
+                {"AttributeName": "timestamp", "KeyType": "RANGE"},
+            ],
+            AttributeDefinitions=[
+                {"AttributeName": "id", "AttributeType": "S"},
+                {"AttributeName": "timestamp", "AttributeType": "N"},
+            ],
+            BillingMode="PAY_PER_REQUEST",
+        )
 
-    # Mock coin data
-    coins = [
-        {
-            "id": 1,
-            "name": "Bitcoin",
-            "symbol": "BTC",
-            "cmc_rank": 1,
-            "quote": {
-                "USD": {
-                    "price": 50000,
-                    "market_cap": 1000000000,
-                    "volume_24h": 50000000,
-                    "percent_change_24h": 2.5,
-                }
-            },
-        }
-    ]
+        # Mock coin data
+        coins = [
+            {
+                "id": 1,
+                "name": "Bitcoin",
+                "symbol": "BTC",
+                "cmc_rank": 1,
+                "quote": {
+                    "USD": {
+                        "price": 50000,
+                        "market_cap": 1000000000,
+                        "volume_24h": 50000000,
+                        "percent_change_24h": 2.5,
+                    }
+                },
+            }
+        ]
 
-    top_20_crypto_coins.save_to_dynamodb(coins)
+        top_20_crypto_coins.save_to_dynamodb(coins)
 
-    # Verify data was saved
-    response = table.scan()
-    assert len(response["Items"]) == 1
-    assert response["Items"][0]["name"] == "Bitcoin"
+        # Verify data was saved
+        response = table.scan()
+        assert len(response["Items"]) == 1
+        assert response["Items"][0]["name"] == "Bitcoin"
 
 
 @patch("urllib.request.urlopen")
