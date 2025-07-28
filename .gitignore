@@ -1,1 +1,7 @@
 *.pyc
+
+# Coverage files
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
