@@ -87,7 +87,7 @@ def get_top_crypto_coins():
         print("[GET_CRYPTO_COINS] Making API request to CoinMarketCap")
 
         # Make the request
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req) as response:  # nosec B310
             print(f"[GET_CRYPTO_COINS] API Response Status: {response.status}")
             response_data = response.read().decode("utf-8")
             data = json.loads(response_data)

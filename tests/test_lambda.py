@@ -21,20 +21,23 @@ def mock_env():
 @mock_aws
 def test_get_api_key_from_cmc(mock_env):
     """Test getting API key from Secrets Manager"""
-    with patch.object(top_20_crypto_coins, 'CMC_API_KEY_NAME', 'test-api-key'):
-        client = boto3.client("secretsmanager", region_name="ap-southeast-1")
+    with patch.object(top_20_crypto_coins, "CMC_API_KEY_NAME", "test-api-key"):
+        # Create secret in mock
+        client = boto3.client("secretsmanager", region_name="us-east-1")
         client.create_secret(Name="test-api-key", SecretString="test-key-123")
 
-        result = top_20_crypto_coins.get_api_key_from_cmc()
-        assert result == "test-key-123"
+        # Mock boto3.client to return our mock client
+        with patch("boto3.client", return_value=client):
+            result = top_20_crypto_coins.get_api_key_from_cmc()
+            assert result == "test-key-123"
 
 
 @mock_aws
 def test_save_to_dynamodb(mock_env):
     """Test saving coins to DynamoDB"""
-    with patch.object(top_20_crypto_coins, 'DYNAMODB_TABLE', 'test-crypto-coins'):
+    with patch.object(top_20_crypto_coins, "DYNAMODB_TABLE", "test-crypto-coins"):
         # Create mock DynamoDB table
-        dynamodb = boto3.resource("dynamodb", region_name="ap-southeast-1")
+        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         table = dynamodb.create_table(
             TableName="test-crypto-coins",
             KeySchema=[
@@ -47,6 +50,9 @@ def test_save_to_dynamodb(mock_env):
             ],
             BillingMode="PAY_PER_REQUEST",
         )
+
+        # Wait for table to be created
+        table.wait_until_exists()
 
         # Mock coin data
         coins = [
@@ -66,12 +72,14 @@ def test_save_to_dynamodb(mock_env):
             }
         ]
 
-        top_20_crypto_coins.save_to_dynamodb(coins)
+        # Mock boto3.resource to return our mock resource
+        with patch("boto3.resource", return_value=dynamodb):
+            top_20_crypto_coins.save_to_dynamodb(coins)
 
-        # Verify data was saved
-        response = table.scan()
-        assert len(response["Items"]) == 1
-        assert response["Items"][0]["name"] == "Bitcoin"
+            # Verify data was saved
+            response = table.scan()
+            assert len(response["Items"]) == 1
+            assert response["Items"][0]["name"] == "Bitcoin"
 
 
 @patch("urllib.request.urlopen")

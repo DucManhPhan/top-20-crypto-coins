@@ -1,7 +1,7 @@
 @echo off
 echo 🚀 Starting Code Quality Checks...
 
-cd /d "%~dp0.."
+cd /d "%~dp0..\.."
 
 echo.
 echo ================================================

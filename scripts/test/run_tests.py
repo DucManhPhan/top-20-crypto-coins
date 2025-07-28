@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to run code quality checks locally
+Script to run unit tests locally
 """
 import subprocess
 import sys
@@ -27,44 +27,59 @@ def run_command(command, description):
         print(f"[FAIL] {description} - FAILED")
         return False
 
+def check_coverage_available():
+    """Check if pytest-cov is available"""
+    try:
+        import pytest_cov
+        return True
+    except ImportError:
+        return False
+
 def main():
-    """Main function to run all code quality checks"""
-    print("Starting Code Quality Checks...")
+    """Main function to run tests"""
+    print("Starting Unit Tests...")
     
     # Change to project root directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(script_dir)
+    project_root = os.path.dirname(os.path.dirname(script_dir))
     os.chdir(project_root)
     
-    checks = [
-        ("python -m black backend/ tests/", "Code Formatting (Black)"),
-        ("python -m black --check backend/ tests/", "Code Formatting Check"),
-        ("python -m flake8 backend/ tests/ --max-line-length=88 --extend-ignore=E203,W503", "Linting Check (Flake8)"),
-        ("python -m bandit -r backend/", "Security Check (Bandit)"),
+    tests = [
+        ("python -m pytest tests/ -v", "Unit Tests (Verbose)"),
+        ("python -m pytest tests/ -v --tb=short", "Unit Tests (Short Traceback)"),
     ]
     
+    # Add coverage test only if pytest-cov is available
+    if check_coverage_available():
+        tests.append(("python -m pytest tests/ --cov=backend --cov-report=term-missing", "Unit Tests with Coverage"))
+    else:
+        print("\nNote: pytest-cov not installed. Skipping coverage test.")
+        print("Install with: pip install pytest-cov")
+    
     results = []
-    for command, description in checks:
+    for command, description in tests:
         success = run_command(command, description)
         results.append((description, success))
+        if not success and "Coverage" not in description:
+            break  # Stop on first failure (but continue if only coverage fails)
     
     # Summary
     print(f"\n{'='*60}")
-    print("SUMMARY")
+    print("TEST SUMMARY")
     print(f"{'='*60}")
     
     all_passed = True
     for description, success in results:
         status = "[PASS] PASSED" if success else "[FAIL] FAILED"
-        print(f"{description:<30} {status}")
+        print(f"{description:<40} {status}")
         if not success:
             all_passed = False
     
     if all_passed:
-        print(f"\nAll checks passed! Ready to commit.")
+        print(f"\nAll tests passed!")
         sys.exit(0)
     else:
-        print(f"\nSome checks failed. Please fix the issues above.")
+        print(f"\nSome tests failed.")
         sys.exit(1)
 
 if __name__ == "__main__":

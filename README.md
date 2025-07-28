@@ -12,6 +12,7 @@
    - [Deploy the project](#deploy-the-project)
 
 - [Schema of crypto-coins table](#schema-of-crypto-coins-table)
+- [How to run test cases on the local](#how-to-run-test-cases-on-the-local)
 - [Wrapping up](#wrapping-up)
 
 
@@ -161,6 +162,23 @@ Below is the schema of the table `crypto_coins`:
 When testing Lambda function, the data was saved into DynamoDB.
 
 ![](./img/img-1.png)
+
+
+<br>
+
+## How to run test cases on the local
+
+1. Install the necessary dependencies in the `requirements.txt` file.
+
+   ```bat
+   .\scripts\test\install_test_deps.bat
+   ```
+
+2. Run Python script for test cases.
+
+   ```bash
+   python .\scripts\test\run_tests.py
+   ```
 
 
 <br>

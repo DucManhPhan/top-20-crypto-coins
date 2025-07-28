@@ -9,5 +9,5 @@ if %errorlevel% neq 0 (
 ) else (
     echo ✅ Dependencies installed successfully
     echo.
-    echo You can now run: scripts\code_quality.bat
+    echo You can now run: scripts\code-quality\code_quality.bat
 )
