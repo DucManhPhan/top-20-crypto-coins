@@ -24,11 +24,17 @@ jobs:
         
         # Check if all workflow files exist
         WORKFLOWS=(
-          ".github/workflows/deploy.yml"
           ".github/workflows/test.yml"
           ".github/workflows/code-quality.yml"
           ".github/workflows/terraform.yml"
           ".github/workflows/integration-test.yml"
+          ".github/workflows/validate-pipeline.yml"
+        )
+        
+        # Check for either deploy.yml or deploy-multi-env.yml
+        DEPLOY_WORKFLOWS=(
+          ".github/workflows/deploy.yml"
+          ".github/workflows/deploy-multi-env.yml"
         )
         
         for workflow in "${WORKFLOWS[@]}"; do
@@ -39,6 +45,21 @@ jobs:
             exit 1
           fi
         done
+        
+        # Check for at least one deploy workflow
+        DEPLOY_EXISTS=false
+        for deploy_workflow in "${DEPLOY_WORKFLOWS[@]}"; do
+          if [ -f "$deploy_workflow" ]; then
+            echo "✅ $deploy_workflow exists"
+            DEPLOY_EXISTS=true
+            break
+          fi
+        done
+        
+        if [ "$DEPLOY_EXISTS" = false ]; then
+          echo "❌ No deploy workflow found (deploy.yml or deploy-multi-env.yml)"
+          exit 1
+        fi
 
     - name: Check Workflow Dependencies
       run: |
@@ -70,19 +91,28 @@ jobs:
       run: |
         echo "🧠 Validating pipeline logic..."
         
-        # Check deploy.yml structure
-        if grep -q "uses: ./.github/workflows/test.yml" .github/workflows/deploy.yml; then
-          echo "✅ deploy.yml calls test.yml"
-        else
-          echo "❌ deploy.yml doesn't call test.yml"
-          exit 1
+        # Check deploy workflow structure
+        DEPLOY_FILE=""
+        if [ -f ".github/workflows/deploy.yml" ]; then
+          DEPLOY_FILE=".github/workflows/deploy.yml"
+        elif [ -f ".github/workflows/deploy-multi-env.yml" ]; then
+          DEPLOY_FILE=".github/workflows/deploy-multi-env.yml"
         fi
         
-        if grep -q "needs: \[test, code-quality\]" .github/workflows/deploy.yml; then
-          echo "✅ terraform job depends on test and code-quality"
-        else
-          echo "❌ terraform job missing proper dependencies"
-          exit 1
+        if [ -n "$DEPLOY_FILE" ]; then
+          if grep -q "uses: ./.github/workflows/test.yml" "$DEPLOY_FILE"; then
+            echo "✅ $DEPLOY_FILE calls test.yml"
+          else
+            echo "❌ $DEPLOY_FILE doesn't call test.yml"
+            exit 1
+          fi
+          
+          if grep -q "needs: \[test, code-quality\]" "$DEPLOY_FILE"; then
+            echo "✅ terraform job depends on test and code-quality"
+          else
+            echo "❌ terraform job missing proper dependencies"
+            exit 1
+          fi
         fi
         
         echo "✅ Pipeline validation completed successfully"
