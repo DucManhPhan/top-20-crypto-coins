@@ -1,6 +1,6 @@
 data "archive_file" "make_zip" {
   type        = "zip"
-  source_file = "${path.root}/backend/top_20_crypto_coins.py"
+  source_file = "${path.module}/../../backend/top_20_crypto_coins.py"
   output_path = "top_20_crypto_coins.zip"
 }
 
