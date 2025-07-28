@@ -43,6 +43,9 @@ jobs:
     name: Terraform
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      action: ${{ steps.set-action.outputs.action }}
+      resources-deployed: ${{ steps.set-action.outputs.resources-deployed }}
 
     steps:
     - name: Checkout
@@ -77,9 +80,19 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Set Environment Variables
+      id: set-action
       run: |
         echo "DEPLOY_ENV=production" >> $GITHUB_ENV
         echo "Deploying to environment: production"
+        
+        ACTION="${{ inputs.action || github.event.inputs.action || 'apply' }}"
+        echo "action=$ACTION" >> $GITHUB_OUTPUT
+        
+        if [ "$ACTION" = "destroy" ]; then
+          echo "resources-deployed=false" >> $GITHUB_OUTPUT
+        else
+          echo "resources-deployed=true" >> $GITHUB_OUTPUT
+        fi
 
     - name: Setup S3 bucket for Terraform state
       run: |

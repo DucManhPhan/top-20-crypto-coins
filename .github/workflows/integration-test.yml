@@ -1,17 +1,17 @@
 name: Integration Tests
 
 on:
-  workflow_run:
-    workflows: ["Terraform Infrastructure"]
-    types:
-      - completed
-    branches: [ main ]
   workflow_call:
     inputs:
       environment:
         description: 'Environment to test'
         required: false
         default: 'production'
+        type: string
+      resources-deployed:
+        description: 'Whether resources are deployed'
+        required: false
+        default: 'true'
         type: string
 
 env:
@@ -22,7 +22,7 @@ jobs:
     name: Integration Test
     runs-on: ubuntu-latest
     environment: production
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_call' }}
+    if: ${{ inputs.resources-deployed == 'true' }}
     
     steps:
     - name: Checkout
