@@ -51,6 +51,18 @@ if %errorlevel% neq 0 (
     echo ✅ Security Check - PASSED
 )
 
+echo.
+echo ================================================
+echo Running: Terraform Format Check
+echo ================================================
+terraform fmt -check -recursive infra/
+if %errorlevel% neq 0 (
+    echo ❌ Terraform Format Check - FAILED
+    set "terraform_failed=1"
+) else (
+    echo ✅ Terraform Format Check - PASSED
+)
+
 :summary
 echo.
 echo ============================================================
@@ -76,6 +88,13 @@ if defined security_failed (
     set "has_failures=1"
 ) else (
     echo Security Check                 ✅ PASSED
+)
+
+if defined terraform_failed (
+    echo Terraform Format Check         ❌ FAILED
+    set "has_failures=1"
+) else (
+    echo Terraform Format Check         ✅ PASSED
 )
 
 echo.

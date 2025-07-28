@@ -1,32 +1,32 @@
 variable "dynamodb_table_name" {
-  type = string
+  type        = string
   description = "Name of the DynamoDB table"
 }
 
 variable "billing_mode" {
-  type = string
+  type        = string
   description = "Billing mode for the DynamoDB table (e.g., PAY_PER_REQUEST, PROVISIONED)"
-  default = "PROVISIONED"
+  default     = "PROVISIONED"
 }
 
 variable "read_capacity" {
-  type = number
+  type        = number
   description = "Read capacity units for the DynamoDB table"
-  default = 10
+  default     = 10
 }
 
 variable "write_capacity" {
-  type = number
+  type        = number
   description = "Write capacity units for the DynamoDB table"
-  default = 10
+  default     = 10
 }
 
 variable "hash_key" {
-  type = string
+  type        = string
   description = "Hash key for the DynamoDB table"
 }
 
 variable "range_key" {
-  type = string
+  type        = string
   description = "Range key for the DynamoDB table"
 }

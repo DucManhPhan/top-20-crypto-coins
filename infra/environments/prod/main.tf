@@ -7,7 +7,7 @@ terraform {
 
 module "crypto_coins" {
   source = "../../base-deployment"
-  
+
   # Environment-specific variables
   cmc_api_key_name    = "prod-cmc-api-key"
   cmc_api_key         = var.cmc_api_key
@@ -15,8 +15,8 @@ module "crypto_coins" {
   billing_mode        = "PROVISIONED"
   read_capacity       = 20
   write_capacity      = 20
-  hash_key           = "id"
-  range_key          = "timestamp"
+  hash_key            = "id"
+  range_key           = "timestamp"
 }
 
 variable "cmc_api_key" {

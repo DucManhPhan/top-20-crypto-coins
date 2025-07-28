@@ -41,6 +41,7 @@ def main():
         ("python -m black --check backend/ tests/", "Code Formatting Check"),
         ("python -m flake8 backend/ tests/ --max-line-length=88 --extend-ignore=E203,W503", "Linting Check (Flake8)"),
         ("python -m bandit -r backend/", "Security Check (Bandit)"),
+        ("terraform fmt -check -recursive infra/", "Terraform Format Check"),
     ]
     
     results = []

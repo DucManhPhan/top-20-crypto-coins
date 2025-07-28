@@ -13,6 +13,7 @@
 
 - [Schema of crypto-coins table](#schema-of-crypto-coins-table)
 - [How to run test cases on the local](#how-to-run-test-cases-on-the-local)
+- [How to check format code of Terraform files](#how-to-check-format-code-of-terraform-files)
 - [Wrapping up](#wrapping-up)
 
 
@@ -179,6 +180,23 @@ When testing Lambda function, the data was saved into DynamoDB.
    ```bash
    python .\scripts\test\run_tests.py
    ```
+
+
+<br>
+
+## How to check format code of Terraform files
+
+In the local, we need to run the following command to verify the format of Terraform files in the infra/ directory.
+
+```bash
+terraform fmt -check -recursive infra/
+```
+
+If any errors happen, run the below command to fix it.
+
+```bash
+terraform fmt -recursive infra/
+```
 
 
 <br>

@@ -12,9 +12,9 @@ data "archive_file" "lambda_layer_zip" {
 }
 
 resource "aws_lambda_layer_version" "lambda_layer" {
-  filename            = data.archive_file.lambda_layer_zip.output_path
-  layer_name          = "crypto-coins-dependencies"
-  source_code_hash    = data.archive_file.lambda_layer_zip.output_base64sha256
+  filename         = data.archive_file.lambda_layer_zip.output_path
+  layer_name       = "crypto-coins-dependencies"
+  source_code_hash = data.archive_file.lambda_layer_zip.output_base64sha256
 
   compatible_runtimes = ["python3.9"]
   description         = "Dependencies for crypto coins Lambda function"
@@ -24,7 +24,7 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 resource "aws_cloudwatch_log_group" "lambda_logs" {
   name              = "/aws/lambda/top_20_crypto_coins"
   retention_in_days = 7
-  
+
   tags = {
     Name        = "crypto-coins-lambda-logs"
     Environment = "production"
@@ -44,14 +44,14 @@ resource "aws_lambda_function" "top_20_crypto_coins" {
   timeout          = 30
   memory_size      = 128
   publish          = true
-  
+
   environment {
     variables = {
       CMC_API_KEY_NAME = var.cmc_api_key_name
       DYNAMODB_TABLE   = var.dynamodb_table_name
     }
   }
-  
+
   tags = {
     Name        = "top-20-crypto-coins-lambda"
     Environment = "production"
@@ -59,7 +59,7 @@ resource "aws_lambda_function" "top_20_crypto_coins" {
     Owner       = "data-team"
     Purpose     = "crypto-data-collection"
   }
-  
+
   depends_on = [aws_cloudwatch_log_group.lambda_logs]
 }
 
@@ -86,7 +86,7 @@ resource "aws_cloudwatch_event_rule" "every_four_hours" {
   name                = "every-four-hours"
   description         = "Fires every 4 hours"
   schedule_expression = "rate(4 hours)"
-  
+
   tags = {
     Name        = "crypto-coins-scheduler"
     Environment = "production"
