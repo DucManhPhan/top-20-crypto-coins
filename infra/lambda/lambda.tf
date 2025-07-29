@@ -4,35 +4,6 @@ data "archive_file" "make_zip" {
   output_path = "top_20_crypto_coins.zip"
 }
 
-data "archive_file" "lambda_layer_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda-layer"
-  output_path = "${path.module}/lambda-layer.zip"
-  excludes    = ["requirements.txt", "create_lambda_layer.py", "install_requirements.py"]
-}
-
-resource "aws_lambda_layer_version" "lambda_layer" {
-  filename         = data.archive_file.lambda_layer_zip.output_path
-  layer_name       = "crypto-coins-dependencies"
-  source_code_hash = data.archive_file.lambda_layer_zip.output_base64sha256
-
-  compatible_runtimes = ["python3.9"]
-  description         = "Dependencies for crypto coins Lambda function"
-}
-
-# CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda_logs" {
-  name              = "/aws/lambda/top_20_crypto_coins"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "crypto-coins-lambda-logs"
-    Environment = "production"
-    Project     = "crypto-coins-tracker"
-    Purpose     = "lambda-logging"
-  }
-}
-
 resource "aws_lambda_function" "top_20_crypto_coins" {
   function_name    = "top_20_crypto_coins"
   filename         = data.archive_file.make_zip.output_path
@@ -69,6 +40,36 @@ resource "aws_lambda_alias" "live" {
   description      = "Live alias for crypto coins Lambda"
   function_name    = aws_lambda_function.top_20_crypto_coins.function_name
   function_version = aws_lambda_function.top_20_crypto_coins.version
+}
+
+# Lambda Layer for dependencies
+data "archive_file" "lambda_layer_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda-layer"
+  output_path = "${path.module}/lambda-layer.zip"
+  excludes    = ["requirements.txt", "create_lambda_layer.py", "install_requirements.py"]
+}
+
+resource "aws_lambda_layer_version" "lambda_layer" {
+  filename         = data.archive_file.lambda_layer_zip.output_path
+  layer_name       = "crypto-coins-dependencies"
+  source_code_hash = data.archive_file.lambda_layer_zip.output_base64sha256
+
+  compatible_runtimes = ["python3.9"]
+  description         = "Dependencies for crypto coins Lambda function"
+}
+
+# CloudWatch Log Group for Lambda
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+  name              = "/aws/lambda/top_20_crypto_coins"
+  retention_in_days = 7
+
+  tags = {
+    Name        = "crypto-coins-lambda-logs"
+    Environment = "production"
+    Project     = "crypto-coins-tracker"
+    Purpose     = "lambda-logging"
+  }
 }
 
 # Allow CloudWatch Events to call Lambda
